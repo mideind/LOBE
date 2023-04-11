@@ -1,0 +1,91 @@
+{% extends "__base.jinja" %}
+{% block headscripts %}
+    {{super()}}
+    <script src='{{url_for("main.static", filename="js/plotly-latest.min.js")}}'></script>
+{% endblock %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Gagnagreining</h1>
+        </div>
+
+        <div class='col-12'>
+            <a href="{{url_for('verification.verify_queue')}}" class='btn btn-success float-right'>
+                Greina
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+        </div>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Yfirlit</h3>
+            <p>Svona hefur okkur gengið að greina upptökur.</p>
+            <div class='card'>
+                <div class='card-body'>
+                    <div id='tester'>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var container = document.getElementById('tester');
+            var layout = {
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                margin: {
+                    'l': 30,
+                    'r': 30,
+                    't': 30,
+                    'b': 30
+                },
+                font: {
+                    color: 'white'
+                },
+                yaxis:{
+                    title:{
+                        text: 'Fjöldi greininga'
+                    }
+                }
+            };
+
+            var config = {
+                responsive: true
+            }
+
+            var trace = {
+                x: {{activity_days}},
+                y: {{activity_counts}},
+                fill: 'tonexty',
+                marker: {
+                }
+            };
+
+
+
+            var data = [trace];
+
+            Plotly.newPlot(container, data, layout, config);
+        </script>
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {% for verifier in verifiers %}
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notandi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    {{macros.verifier_card(verifier)}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

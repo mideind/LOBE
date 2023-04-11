@@ -26,17 +26,6 @@
             </li>
         {% endif %}
         {% if not current_user.is_anonymous and current_user.is_admin() %}
-            <li class="nav-item dropdown">
-                <a class="nav-link" href="#" id="navbarDropdownMenuLinkPostings" role="button" data-toggle="dropdown">
-                    <span>Auglýsingar</span>
-                </a>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" href="{{url_for('application.postings')}}">Auglýsingar</a>
-                    <a class="dropdown-item" href="{{url_for('application.applications') }}">Umsóknir</a>
-                </div>
-            </li>
-        {% endif %}
-        {% if not current_user.is_anonymous and current_user.is_admin() %}
             <li class="nav-item {% if section == 'mos' %}active{% endif %}">
                 <a class="nav-link {% if section == 'mos' %}text-success{% endif %}" href="{{url_for('mos.mos_list')}}">MOS prufur</a>
             </li>
@@ -61,7 +50,6 @@
             <div class="dropdown-menu">
                 <a class="dropdown-item" href="{{url_for('configuration.conf_list')}}">Stillingar</a>
                 <a class="dropdown-item" href="{{url_for('verification.verify_index')}}">Greining</a>
-                <a class="dropdown-item" href="{{url_for('shop.lobe_shop')}}">Búðin</a>
                 <div class='dropdown-divider'></div>
                 <a class="dropdown-item" href="{{url_for('main.download_manual')}}">Leiðbeiningar</a>
             </div>

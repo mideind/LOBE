@@ -330,82 +330,28 @@ def delete_verification():
         return Response(errorMessage, status=500)
 
 
-# removed for now
-# @verification.route("/verification", methods=["GET"])
-# @login_required
-# def verify_index():
-#     """
-#     Home screen of the verifiers
-#     """
-#     verifiers = sorted(get_verifiers(), key=lambda v: -v.progression.weekly_verifies)
-#     weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
-#     if weekly_verifies < app.config["ECONOMY"]["weekly_challenge"]["goal"]:
-#         weekly_progress = 100 * (
-#             (weekly_verifies - current_user.progression.weekly_verifies)
-#             / app.config["ECONOMY"]["weekly_challenge"]["goal"]
-#         )
-#     else:
-#         weekly_progress = 100 * (
-#             (weekly_verifies - app.config["ECONOMY"]["weekly_challenge"]["goal"])
-#             % app.config["ECONOMY"]["weekly_challenge"]["extra_interval"]
-#             / app.config["ECONOMY"]["weekly_challenge"]["extra_interval"]
-#         )
-#     user_weekly_progress = 100 * (
-#         current_user.progression.weekly_verifies / app.config["ECONOMY"]["weekly_challenge"]["goal"]
-#     )
+@verification.route("/verification", methods=["GET"])
+@login_required
+def verify_index():
+    """
+    Home screen of the verifiers
+    """
+    verifiers = get_verifiers()
+    verification_progress = 0
 
-#     verification_progress = 0
-#     if current_user.progression.verification_level < len(app.config["ECONOMY"]["achievements"]["verification"].keys()):
-#         verification_progress = 100 * (
-#             current_user.progression.num_verifies
-#             / app.config["ECONOMY"]["achievements"]["verification"][str(current_user.progression.verification_level)][
-#                 "goal"
-#             ]
-#         )
 
-#     spy_progress = 0
-#     if current_user.progression.spy_level < len(app.config["ECONOMY"]["achievements"]["spy"].keys()):
-#         spy_progress = 100 * (
-#             current_user.progression.num_invalid
-#             / app.config["ECONOMY"]["achievements"]["spy"][str(current_user.progression.spy_level)]["goal"]
-#         )
+    activity_days, activity_counts = activity(Verification)
+    # show_weekly_prices, show_daily_spin = False, False #disable prizes when not in use
 
-#     streak_progress = 0
-
-#     show_weekly_prices, show_daily_spin = False, False
-#     daily_spin_form = DailySpinForm()
-#     if not current_user.progression.has_seen_weekly_prices:
-#         progression = current_user.progression
-#         progression.has_seen_weekly_prices = True
-#         db.session.commit()
-#         show_weekly_prices = True
-#     elif not current_user.progression.last_spin or current_user.progression.last_spin < datetime.combine(
-#         date.today(), datetime.min.time()
-#     ):
-#         # we dont want to show weekly prizes and spins at the same time
-#         # last spin was not today
-#         show_daily_spin = True
-
-#     activity_days, activity_counts = activity(Verification)
-#     # show_weekly_prices, show_daily_spin = False, False #disable prizes when not in use
-
-#     # get the number of verifications per user
-#     return render_template(
-#         "verify_index.jinja",
-#         verifiers=verifiers,
-#         weekly_verifies=weekly_verifies,
-#         weekly_progress=weekly_progress,
-#         user_weekly_progress=user_weekly_progress,
-#         verification_progress=verification_progress,
-#         spy_progress=spy_progress,
-#         streak_progress=streak_progress,
-#         daily_spin_form=daily_spin_form,
-#         progression_view=True,
-#         show_weekly_prices=show_weekly_prices,
-#         show_daily_spin=show_daily_spin,
-#         activity_days=activity_days,
-#         activity_counts=activity_counts,
-#     )
+    # get the number of verifications per user
+    return render_template(
+        "verify_index.jinja",
+        verifiers=verifiers,
+        verification_progress=verification_progress,
+        progression_view=True,
+        activity_days=activity_days,
+        activity_counts=activity_counts,
+    )
 
 
 @verification.route("/verification/stats", methods=["GET"])
