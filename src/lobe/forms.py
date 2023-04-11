@@ -5,7 +5,6 @@ from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import (
     BooleanField,
-    EmailField,
     FloatField,
     Form,
     HiddenField,
@@ -21,18 +20,7 @@ from wtforms.validators import InputRequired, NumberRange
 from wtforms_alchemy import ModelForm
 from wtforms_alchemy.fields import QuerySelectField
 
-from lobe.models import (
-    Configuration,
-    Mos,
-    MosInstance,
-    Posting,
-    Role,
-    User,
-    VerifierFont,
-    VerifierIcon,
-    VerifierQuote,
-    VerifierTitle,
-)
+from lobe.models import Configuration, Mos, MosInstance, Role, User
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -45,31 +33,6 @@ class MultiCheckboxField(SelectMultipleField):
 
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
-
-
-class DailySpinForm(Form):
-    prize_type = HiddenField("type", validators=[InputRequired()])
-    prize_value = HiddenField("value")
-
-
-class VerifierIconForm(ModelForm):
-    class Meta:
-        model = VerifierIcon
-
-
-class VerifierTitleForm(ModelForm):
-    class Meta:
-        model = VerifierTitle
-
-
-class VerifierQuoteForm(ModelForm):
-    class Meta:
-        model = VerifierQuote
-
-
-class VerifierFontForm(ModelForm):
-    class Meta:
-        model = VerifierFont
 
 
 class CollectionForm(Form):
@@ -353,22 +316,12 @@ class ConfigurationForm(Form):
     video_codec = SelectField("Myndmerkjamál", choices=[("vp8", "VP8")])
 
 
-# The three form below might not be correct
+# The two form below might not be correct
 # model_form function was used to create them, but is now deprecated
 class RoleForm(Form):
     class Meta:
         model = Role
         exclude = ["id", "users"]
-
-
-class PostingForm(Form):
-    name = StringField("Nafn", [InputRequired()])
-    ad_text = StringField("Texti auglýsingar", [InputRequired()], widget=widgets.TextArea())
-    utterances = StringField("Setningar", [InputRequired()], widget=widgets.TextArea())
-
-    class Meta:
-        model = Posting
-        exclude = ["id", "created_at", "uuid", "collection", "applications"]
 
 
 class MosDetailForm(Form):
@@ -382,32 +335,6 @@ class MosDetailForm(Form):
     class Meta:
         model = Mos
         exclude = ["id", "created_at", "uuid", "collection", "applications"]
-
-
-class ApplicationForm(Form):
-    name = StringField("Nafn", [InputRequired()])
-    sex = SelectField(
-        "Kyn",
-        [InputRequired()],
-        choices=[("Kona", "Kona"), ("Karl", "Karl"), ("Annað", "Annað")],
-    )
-    age = IntegerField("Aldur", [InputRequired(), NumberRange(min=10, max=120)])
-    voice = SelectField(
-        "Rödd",
-        [InputRequired()],
-        choices=[
-            ("sopran", "Sópran"),
-            ("alt", "Alt"),
-            ("tenor", "Tenór"),
-            ("bassi", "Bassi"),
-        ],
-    )
-    email = EmailField("Netfang", [InputRequired()])
-    phone = StringField("Sími")
-    terms_agreement = BooleanField(
-        "Ég samþykki <a href='/tos/' target='_blank'>skilmála" + "og gagnastefnu LVL</a>",
-        validators=[InputRequired()],
-    )
 
 
 class MosForm(ModelForm):
@@ -528,8 +455,3 @@ class MosUploadForm(FlaskForm):
             FileRequired("Hladdu upp zip skrá"),
         ]
     )
-
-
-class PostLinkForm(FlaskForm):
-    link = StringField("Youtube hlekkur:", [InputRequired()])
-    link = StringField("Youtube hlekkur:", [InputRequired()])

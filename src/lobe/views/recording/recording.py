@@ -3,9 +3,9 @@ import os
 import traceback
 from functools import wraps
 
-from flask import Blueprint, Response
-from flask import current_app as app
 from flask import (
+    Blueprint,
+    Response,
     flash,
     jsonify,
     redirect,
@@ -14,8 +14,8 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from flask import current_app as app
 from flask_security import current_user, login_required, roles_accepted
-
 from lobe.database_functions import (
     delete_recording_db,
     resolve_order,
@@ -49,7 +49,7 @@ def recording_list():
         recordings = (
             db.session.query(Recording)
             .filter_by(marked_as_bad=True)
-            .paginate(page, per_page=app.config["RECORDING_PAGINATION"])
+            .paginate(page=page, per_page=app.config["RECORDING_PAGINATION"])
         )
     else:
         recordings = Recording.query.order_by(
@@ -58,7 +58,7 @@ def recording_list():
                 request.args.get("sort_by", default="created_at"),
                 order=request.args.get("order", default="desc"),
             )
-        ).paginate(page, per_page=app.config["RECORDING_PAGINATION"])
+        ).paginate(page=page, per_page=app.config["RECORDING_PAGINATION"])
 
     return render_template(
         "recording_list.jinja",

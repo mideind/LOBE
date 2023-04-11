@@ -1,6 +1,7 @@
 import traceback
 import uuid
 
+import click
 from flask import Blueprint
 from flask import current_app as app
 from flask import flash, redirect, render_template, request, url_for
@@ -8,11 +9,7 @@ from flask_security import login_required, roles_accepted
 from flask_security.utils import hash_password
 from sqlalchemy import or_
 
-from lobe.database_functions import (
-    add_progression_on_user,
-    resolve_order,
-    sessions_day_info,
-)
+from lobe.database_functions import resolve_order, sessions_day_info
 from lobe.forms import (
     ExtendedRegisterForm,
     RoleForm,
@@ -22,6 +19,61 @@ from lobe.forms import (
 from lobe.models import Recording, Role, Session, User, db
 
 user = Blueprint("user", __name__, template_folder="templates")
+
+# we want to convert this class to a click command
+# and attach that command to the flask cli via the blueprint
+# so that we can run it from the command line
+
+
+@user.cli.command("add_default_roles")
+def add_default_roles():
+    roles = [
+        {
+            "name": "admin",
+            "description": "Umsjónarhlutverk með aðgang að notendastillingum",
+        },
+        {
+            "name": "Notandi",
+            "description": "Venjulegur notandi með grunn aðgang",
+        },
+        {
+            "name": "Greinir",
+            "description": "Greinir með takmarkað aðgengi",
+        },
+    ]
+    existing_roles = [role.name for role in Role.query.all()]
+    for i, r in enumerate(roles):
+        if r["name"] not in existing_roles:
+            role = Role()
+            role.name = r["name"]
+            role.description = r["description"]
+            db.session.add(role)
+            print("Creating role:", r["name"])
+
+    db.session.commit()
+
+
+@user.cli.command("add")
+@click.option("--email", prompt=True)
+@click.option("--name", prompt=True)
+@click.option("--password", prompt=True, hide_input=True)
+def add_user(email: str, name: str, password: str):
+    # we need to do the roles in the function because we need to query the db
+    roles = Role.query.all()
+    selected_roles = []
+    if len(roles) > 0:
+        role_select = None
+        while role_select not in [r.id for r in roles]:
+            click.echo("Select a role")
+            role_select = int(
+                input("".join(["[{}] - {} : {}\n".format(role.id, role.name, role.description) for role in roles]))
+            )
+        selected_roles.append(Role.query.get(role_select).name)
+        app.user_datastore.create_user(
+            email=email, password=hash_password(password), name=name, roles=selected_roles, uuid=uuid.uuid4()
+        )
+        db.session.commit()
+        print("User with email {} has been created".format(email))
 
 
 @user.route("/users/")
@@ -35,7 +87,7 @@ def user_list():
             request.args.get("sort_by", default="name"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, app.config["USER_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["USER_PAGINATION"])
     return render_template("user_list.jinja", users=users, section="user")
 
 
@@ -54,7 +106,7 @@ def user_detail(id):
                 order=request.args.get("order", default="desc"),
             )
         )
-        .paginate(page, app.config["RECORDING_PAGINATION"])
+        .paginate(page=page, per_page=app.config["RECORDING_PAGINATION"])
     )
     return render_template("user.jinja", user=user, recordings=recordings, section="user")
 
@@ -118,7 +170,6 @@ def user_toggle_admin(id):
     else:
         app.user_datastore.add_role_to_user(ds_user, "admin")
         app.user_datastore.remove_role_from_user(ds_user, "Notandi")
-        add_progression_on_user(ds_user)
         flash("Notandi er nú vefstjóri", category="success")
     db.session.commit()
     return redirect(url_for("user.user_detail", id=id))
@@ -130,7 +181,6 @@ def user_toggle_admin(id):
 def user_make_verifier(id):
     ds_user = app.user_datastore.get_user(id)
     app.user_datastore.add_role_to_user(ds_user, "Greinir")
-    add_progression_on_user(ds_user)
     flash("Notandi er nú greinandi", category="success")
     db.session.commit()
     return redirect(url_for("user.user_detail", id=id))
@@ -181,7 +231,6 @@ def verifier_create():
                 roles=["Greinir"],
             )
             form.populate_obj(new_user)
-            add_progression_on_user(new_user)
 
             flash("Nýr greinir var búinn til", category="success")
             return redirect(url_for("user.user_list"))

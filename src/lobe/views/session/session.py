@@ -1,10 +1,8 @@
 import traceback
 
-from flask import Blueprint
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask import current_app as app
-from flask import flash, redirect, render_template, request, url_for
 from flask_security import current_user, login_required, roles_accepted
-
 from lobe.database_functions import delete_session_db, resolve_order
 from lobe.forms import SessionEditForm
 from lobe.models import PrioritySession, Recording, Session, db
@@ -23,7 +21,7 @@ def rec_session_list():
             request.args.get("sort_by", default="created_at"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, per_page=app.config["SESSION_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["SESSION_PAGINATION"])
     isPriority = False
     return render_template(
         "session_list.jinja",
@@ -44,7 +42,7 @@ def priority_session_list():
             request.args.get("sort_by", default="created_at"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, per_page=app.config["SESSION_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["SESSION_PAGINATION"])
     isPriority = True
     return render_template(
         "session_list.jinja",

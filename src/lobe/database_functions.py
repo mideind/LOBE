@@ -27,7 +27,6 @@ from lobe.models import (
     Token,
     Trim,
     User,
-    VerifierProgression,
 )
 
 
@@ -770,43 +769,6 @@ def get_admins():
 
 def get_verifiers_and_admins():
     return list(set(get_admins() + get_verifiers()))
-
-
-def add_progression_on_user(user):
-    if user.progression_id is None:
-        progression = VerifierProgression()
-        db.session.add(progression)
-        db.session.flush()
-        user.progression_id = progression.id
-    db.session.commit()
-    progression = user.progression
-    if progression.verification_level is None:
-        progression.verification_level = 0
-    if progression.spy_level is None:
-        progression.spy_level = 0
-    if progression.streak_level is None:
-        progression.streak_level = 0
-    if progression.num_verifies is None:
-        progression.num_verifies = 0
-    if progression.num_session_verifies is None:
-        progression.num_session_verifies = 0
-    if progression.num_invalid is None:
-        progression.num_invalid = 0
-    if progression.num_streak_days is None:
-        progression.num_streak_days = 0
-    if progression.lobe_coins is None:
-        progression.lobe_coins = 0
-    if progression.experience is None:
-        progression.experience = 0
-    if progression.weekly_verifies is None:
-        progression.weekly_verifies = 0
-    if progression.last_spin is None:
-        progression.last_spin = db.func.current_timestamp()
-    if progression.fire_sale is None:
-        progression.fire_sale = False
-    if progression.fire_sale_discount is None:
-        progression.fire_sale_discount = 0.0
-    db.session.commit()
 
 
 def insert_trims(trims, verification_id):

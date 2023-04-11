@@ -1,8 +1,10 @@
 import traceback
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint
 from flask import current_app as app
+from flask import flash, redirect, render_template, request, url_for
 from flask_security import login_required, roles_accepted
+
 from lobe.database_functions import resolve_order
 from lobe.forms import ConfigurationForm
 from lobe.models import Collection, Configuration, db
@@ -21,7 +23,7 @@ def conf_list():
             request.args.get("sort_by", default="created_at"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, per_page=app.config["CONF_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["CONF_PAGINATION"])
 
     return render_template("conf_list.jinja", confs=confs, section="other")
 

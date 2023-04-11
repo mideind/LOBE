@@ -1,8 +1,7 @@
 import traceback
 
-from flask import Blueprint
-from flask import current_app as app
 from flask import (
+    Blueprint,
     flash,
     redirect,
     render_template,
@@ -10,8 +9,8 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from flask import current_app as app
 from flask_security import login_required, roles_accepted
-
 from lobe.database_functions import delete_token_db, resolve_order
 from lobe.models import Token, db
 
@@ -36,7 +35,7 @@ def token_list():
             request.args.get("sort_by", default="created_at"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, per_page=app.config["TOKEN_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["TOKEN_PAGINATION"])
 
     return render_template("token_list.jinja", tokens=tokens, section="token")
 

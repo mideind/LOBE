@@ -6,9 +6,9 @@ from operator import itemgetter
 from zipfile import ZipFile
 
 import numpy as np
+from flask import Blueprint, Response
+from flask import current_app as app
 from flask import (
-    Blueprint,
-    Response,
     flash,
     redirect,
     render_template,
@@ -16,8 +16,9 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask import current_app as app
 from flask_security import current_user, login_required, roles_accepted
+from sqlalchemy.exc import IntegrityError
+
 from lobe.database_functions import (
     delete_mos_instance_db,
     resolve_order,
@@ -42,7 +43,6 @@ from lobe.models import (
     User,
     db,
 )
-from sqlalchemy.exc import IntegrityError
 
 mos = Blueprint("mos", __name__, template_folder="templates")
 
@@ -58,7 +58,7 @@ def mos_list():
             request.args.get("sort_by", default="created_at"),
             order=request.args.get("order", default="desc"),
         )
-    ).paginate(page, per_page=app.config["MOS_PAGINATION"])
+    ).paginate(page=page, per_page=app.config["MOS_PAGINATION"])
     collections = Collection.query.order_by(
         resolve_order(
             Collection,
@@ -84,7 +84,7 @@ def mos_collection(id):
                 order=request.args.get("order", default="desc"),
             )
         )
-        .paginate(page, per_page=app.config["MOS_PAGINATION"])
+        .paginate(page=page, per_page=app.config["MOS_PAGINATION"])
     )
     return render_template(
         "mos_collection_list.jinja",
@@ -109,7 +109,7 @@ def mos_collection_none():
                 order=request.args.get("order", default="desc"),
             )
         )
-        .paginate(page, per_page=app.config["MOS_PAGINATION"])
+        .paginate(page=page, per_page=app.config["MOS_PAGINATION"])
     )
     return render_template(
         "mos_no_collection_list.jinja",
