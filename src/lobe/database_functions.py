@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 
 from lobe import db
 from lobe.models import (
+    VERIFIER_ROLE,
     Collection,
     CustomRecording,
     CustomToken,
@@ -760,7 +761,7 @@ def resolve_order(object, sort_by, order="desc"):
 
 
 def get_verifiers():
-    return [u for u in User.query.filter(User.active is True) if any(r.name == "Greinir" for r in u.roles)]
+    return [u for u in User.query.filter(User.active is True) if any(r.name == VERIFIER_ROLE for r in u.roles)]
 
 
 def get_admins():

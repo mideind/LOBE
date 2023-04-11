@@ -16,28 +16,33 @@ from lobe.forms import (
     UserEditForm,
     VerifierRegisterForm,
 )
-from lobe.models import Recording, Role, Session, User, db
+from lobe.models import (
+    ADMIN_ROLE,
+    USER_ROLE,
+    VERIFIER_ROLE,
+    Recording,
+    Role,
+    Session,
+    User,
+    db,
+)
 
 user = Blueprint("user", __name__, template_folder="templates")
-
-# we want to convert this class to a click command
-# and attach that command to the flask cli via the blueprint
-# so that we can run it from the command line
 
 
 @user.cli.command("add_default_roles")
 def add_default_roles():
     roles = [
         {
-            "name": "admin",
+            "name": ADMIN_ROLE,
             "description": "Umsjónarhlutverk með aðgang að notendastillingum",
         },
         {
-            "name": "Notandi",
+            "name": USER_ROLE,
             "description": "Venjulegur notandi með grunn aðgang",
         },
         {
-            "name": "Greinir",
+            "name": VERIFIER_ROLE,
             "description": "Greinir með takmarkað aðgengi",
         },
     ]
@@ -78,7 +83,7 @@ def add_user(email: str, name: str, password: str):
 
 @user.route("/users/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def user_list():
     page = int(request.args.get("page", 1))
     users = User.query.order_by(
@@ -93,7 +98,7 @@ def user_list():
 
 @user.route("/users/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def user_detail(id):
     page = int(request.args.get("page", 1))
     user = User.query.get(id)
@@ -113,7 +118,7 @@ def user_detail(id):
 
 @user.route("/users/<int:id>/times", methods=["GET"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def user_time_info(id):
     user = User.query.get(id)
     sessions = Session.query.filter(or_(Session.user_id == user.id, Session.manager_id == user.id)).order_by(
@@ -134,7 +139,7 @@ def user_time_info(id):
 
 @user.route("/users/<int:id>/edit/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def user_edit(id):
     user = User.query.get(id)
     form = UserEditForm(obj=user)
@@ -160,16 +165,16 @@ def user_edit(id):
 
 @user.route("/users/<int:id>/toggle_admin/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def user_toggle_admin(id):
     ds_user = app.user_datastore.get_user(id)
-    if ds_user.has_role("admin"):
-        app.user_datastore.remove_role_from_user(ds_user, "admin")
-        app.user_datastore.add_role_to_user(ds_user, "Notandi")
+    if ds_user.has_role(ADMIN_ROLE):
+        app.user_datastore.remove_role_from_user(ds_user, ADMIN_ROLE)
+        app.user_datastore.add_role_to_user(ds_user, USER_ROLE)
         flash("Notandi er ekki lengur vefstjóri", category="success")
     else:
-        app.user_datastore.add_role_to_user(ds_user, "admin")
-        app.user_datastore.remove_role_from_user(ds_user, "Notandi")
+        app.user_datastore.add_role_to_user(ds_user, ADMIN_ROLE)
+        app.user_datastore.remove_role_from_user(ds_user, USER_ROLE)
         flash("Notandi er nú vefstjóri", category="success")
     db.session.commit()
     return redirect(url_for("user.user_detail", id=id))
@@ -177,10 +182,10 @@ def user_toggle_admin(id):
 
 @user.route("/users/<int:id>/make_verifier/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def user_make_verifier(id):
     ds_user = app.user_datastore.get_user(id)
-    app.user_datastore.add_role_to_user(ds_user, "Greinir")
+    app.user_datastore.add_role_to_user(ds_user, VERIFIER_ROLE)
     flash("Notandi er nú greinandi", category="success")
     db.session.commit()
     return redirect(url_for("user.user_detail", id=id))
@@ -188,7 +193,7 @@ def user_make_verifier(id):
 
 @user.route("/users/create/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def user_create():
     form = ExtendedRegisterForm(request.form)
     if request.method == "POST" and form.validate():
@@ -198,7 +203,7 @@ def user_create():
                 email=form.email.data,
                 password=hash_password(form.password.data),
                 uuid=uuid.uuid4(),
-                roles=["admin" if form.is_admin.data else "Notandi"],
+                roles=[ADMIN_ROLE if form.is_admin.data else USER_ROLE],
             )
             form.populate_obj(new_user)
             db.session.commit()
@@ -218,7 +223,7 @@ def user_create():
 
 @user.route("/users/create_verifier", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def verifier_create():
     form = VerifierRegisterForm(request.form)
     if request.method == "POST" and form.validate():
@@ -228,7 +233,7 @@ def verifier_create():
                 email=form.email.data,
                 password=hash_password(form.password.data),
                 uuid=uuid.uuid4(),
-                roles=["Greinir"],
+                roles=[VERIFIER_ROLE],
             )
             form.populate_obj(new_user)
 
@@ -249,7 +254,7 @@ def verifier_create():
 
 @user.route("/users/<int:id>/delete/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_user(id):
     user = db.session.query(User).get(id)
     name = user.name
@@ -261,7 +266,7 @@ def delete_user(id):
 
 @user.route("/roles/create/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def role_create():
     form = RoleForm(request.form)
     if request.method == "POST" and form.validate():
@@ -283,7 +288,7 @@ def role_create():
 
 @user.route("/roles/<int:id>/edit/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def role_edit(id):
     role = Role.query.get(id)
     form = RoleForm(request.form, obj=role)

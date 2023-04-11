@@ -1,7 +1,8 @@
 import traceback
 
+from flask import Blueprint
+from flask import current_app as app
 from flask import (
-    Blueprint,
     flash,
     redirect,
     render_template,
@@ -9,24 +10,24 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask import current_app as app
 from flask_security import login_required, roles_accepted
+
 from lobe.database_functions import delete_token_db, resolve_order
-from lobe.models import Token, db
+from lobe.models import ADMIN_ROLE, USER_ROLE, Token, db
 
 token = Blueprint("token", __name__, template_folder="templates")
 
 
 @token.route("/tokens/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def token_detail(id):
     return render_template("token.jinja", token=Token.query.get(id), section="token")
 
 
 @token.route("/tokens/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def token_list():
     page = int(request.args.get("page", default=1))
     tokens = Token.query.order_by(
@@ -42,7 +43,7 @@ def token_list():
 
 @token.route("/tokens/<int:id>/download/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def download_token(id):
     token = Token.query.get(id)
     try:
@@ -53,7 +54,7 @@ def download_token(id):
 
 @token.route("/tokens/<int:id>/delete/", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_token(id):
     token = Token.query.get(id)
     did_delete = delete_token_db(token)
@@ -66,7 +67,7 @@ def delete_token(id):
 
 @token.route("/token/<int:id>/mark_bad/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def toggle_token_bad(id):
     token = Token.query.get(id)
     token.marked_as_bad = not token.marked_as_bad

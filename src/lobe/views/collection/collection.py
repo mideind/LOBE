@@ -34,7 +34,7 @@ from lobe.managers import (
     create_collection_zip,
     trim_collection_handler,
 )
-from lobe.models import Collection, Token, User, db
+from lobe.models import ADMIN_ROLE, USER_ROLE, Collection, Token, User, db
 from lobe.tools.pagination import ListPagination
 
 collection = Blueprint("collection", __name__, template_folder="templates")
@@ -42,7 +42,7 @@ collection = Blueprint("collection", __name__, template_folder="templates")
 
 @collection.route("/collections/create/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def create_collection():
     form = CollectionForm(request.form)
     if request.method == "POST" and form.validate():
@@ -58,7 +58,7 @@ def create_collection():
 
 @collection.route("/collections/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def collection_list():
     form = UploadCollectionForm()
     if request.method == "POST":
@@ -122,7 +122,7 @@ def collection_list():
 
 @collection.route("/collections/zip_list/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def collection_zip_list():
     page = int(request.args.get("page", 1))
     collections = (
@@ -135,7 +135,7 @@ def collection_zip_list():
 
 @collection.route("/collections/<int:id>/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def collection_detail(id):
     token_form = BulkTokenForm(request.form)
     if request.method == "POST":
@@ -186,7 +186,7 @@ def collection_detail(id):
 
 @collection.route("/collections/<int:id>/sessions", methods=["GET"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def collection_sessions(id):
     page = int(request.args.get("page", 1))
     collection = Collection.query.get(id)
@@ -201,7 +201,7 @@ def collection_sessions(id):
 
 @collection.route("/collections/<int:id>/trim", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def trim_collection(id):
     """
     Trim all recordings in the collection
@@ -214,7 +214,7 @@ def trim_collection(id):
 
 @collection.route("/collections/<int:id>/generate_zip")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def generate_zip(id):
     # TODO: Send some message in real-time to notify user when finished
     app.executor.submit(create_collection_zip, id)
@@ -224,7 +224,7 @@ def generate_zip(id):
 
 @collection.route("/collections/<int:id>/stream_zip")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def stream_collection_zip(id):
     collection = Collection.query.get(id)
     zip_file = open(collection.zip_path, "rb")
@@ -242,7 +242,7 @@ def stream_collection_zip(id):
 
 @collection.route("/collections/stream_collection_demo")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def stream_collection_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
@@ -253,7 +253,7 @@ def stream_collection_index_demo():
 
 @collection.route("/collections/<int:id>/collection_info")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def download_collection_info(id):
     info = create_collection_info(id)
     json.dump(
@@ -274,7 +274,7 @@ def download_collection_info(id):
 
 @collection.route("/collections/<int:id>/edit/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def edit_collection(id):
     collection = Collection.query.get(id)
     form = collection_edit_form(collection)
@@ -306,7 +306,7 @@ def edit_collection(id):
 
 @collection.route("/collections/<int:id>/delete/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_collection(id):
     collection = db.session.query(Collection).get(id)
     name = collection.name
@@ -329,7 +329,7 @@ def delete_collection(id):
 
 @collection.route("/collections/<int:id>/delete_archive/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_collection_archive(id):
     collection = db.session.query(Collection).get(id)
     if collection.has_zip:

@@ -1,8 +1,9 @@
 import os
 import traceback
 
+from flask import Blueprint
+from flask import current_app as app
 from flask import (
-    Blueprint,
     flash,
     redirect,
     render_template,
@@ -10,8 +11,9 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask import current_app as app
 from flask_security import current_user, login_required
+
+from lobe.models import VERIFIER_ROLE
 
 main = Blueprint(
     "main",
@@ -25,7 +27,7 @@ main = Blueprint(
 @main.route("/")
 @login_required
 def index():
-    if current_user.has_role("Greinir"):
+    if current_user.has_role(VERIFIER_ROLE):
         return redirect(url_for("verification.verify_index"))
     return redirect(url_for("collection.collection_list"))
 
@@ -33,7 +35,7 @@ def index():
 @main.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")
 @login_required
 def index_redirect():
-    if current_user.has_role("Greinir"):
+    if current_user.has_role(VERIFIER_ROLE):
         return redirect(url_for("verification.verify_index"))
     return redirect(url_for("collection.collection_list"))
 

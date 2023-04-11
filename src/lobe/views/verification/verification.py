@@ -13,6 +13,7 @@ from sqlalchemy import and_, or_
 from lobe.database_functions import activity, get_verifiers, insert_trims, resolve_order
 from lobe.forms import DeleteVerificationForm, SessionVerifyForm
 from lobe.models import (
+    ADMIN_ROLE,
     Collection,
     PrioritySession,
     Recording,
@@ -339,7 +340,6 @@ def verify_index():
     verifiers = get_verifiers()
     verification_progress = 0
 
-
     activity_days, activity_counts = activity(Verification)
     # show_weekly_prices, show_daily_spin = False, False #disable prizes when not in use
 
@@ -356,7 +356,7 @@ def verify_index():
 
 @verification.route("/verification/stats", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def verify_stats():
     """
     Statistics screen of the verifiers

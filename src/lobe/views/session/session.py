@@ -1,18 +1,20 @@
 import traceback
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint
 from flask import current_app as app
+from flask import flash, redirect, render_template, request, url_for
 from flask_security import current_user, login_required, roles_accepted
+
 from lobe.database_functions import delete_session_db, resolve_order
 from lobe.forms import SessionEditForm
-from lobe.models import PrioritySession, Recording, Session, db
+from lobe.models import ADMIN_ROLE, USER_ROLE, PrioritySession, Recording, Session, db
 
 session = Blueprint("session", __name__, template_folder="templates")
 
 
 @session.route("/sessions/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def rec_session_list():
     page = int(request.args.get("page", 1))
     sessions = Session.query.order_by(
@@ -33,7 +35,7 @@ def rec_session_list():
 
 @session.route("/prioritySessions/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def priority_session_list():
     page = int(request.args.get("page", 1))
     sessions = PrioritySession.query.order_by(
@@ -54,7 +56,7 @@ def priority_session_list():
 
 @session.route("/sessions/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def rec_session_detail(id):
     session = Session.query.get(id)
     return render_template("session.jinja", session=session, section="session")
@@ -62,7 +64,7 @@ def rec_session_detail(id):
 
 @session.route("/sessions/<int:id>/mark/priority")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mark_session_as_priority(id):
     session = Session.query.get(id)
     session.has_priority = True
@@ -72,7 +74,7 @@ def mark_session_as_priority(id):
 
 @session.route("/sessions/<int:id>/unmark/priority")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def unmark_session_as_priority(id):
     session = Session.query.get(id)
     session.has_priority = False
@@ -82,7 +84,7 @@ def unmark_session_as_priority(id):
 
 @session.route("/priority/sessions/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def rec_priority_session_detail(id):
     session = PrioritySession.query.get(id)
     return render_template("session.jinja", session=session, section="session")
@@ -90,7 +92,7 @@ def rec_priority_session_detail(id):
 
 @session.route("/sessions/addpriority/<int:session_id>/<int:recording_id>/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def add_recording_to_priority_session(session_id, recording_id):
     session = PrioritySession.query.get(session_id)
     recording = Recording.query.get(recording_id)
@@ -102,7 +104,7 @@ def add_recording_to_priority_session(session_id, recording_id):
 
 @session.route("/sessions/create_priority_session/<int:recording_id>/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def create_priority_session(recording_id):
     recording = Recording.query.get(recording_id)
     session = PrioritySession(
@@ -129,7 +131,7 @@ def create_priority_session(recording_id):
 
 @session.route("/sessions/<int:id>/edit/", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def session_edit(id):
     session = Session.query.get(id)
     form = SessionEditForm(request.form)
@@ -151,7 +153,7 @@ def session_edit(id):
 
 @session.route("/sessions/<int:id>/delete/", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_session(id):
     record_session = Session.query.get(id)
     did_delete = delete_session_db(record_session)

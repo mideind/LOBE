@@ -19,8 +19,11 @@ from lobe import db
 from lobe.tools.latin_square import balanced_latin_squares
 
 ADMIN_ROLE_ID = 1
-ADMIN_ROLE_NAME = "admin"
 ESTIMATED_AVERAGE_RECORD_LENGTH = 5
+
+ADMIN_ROLE = "admin"
+USER_ROLE = "Notandi"
+VERIFIER_ROLE = "Greinir"
 
 
 class BaseModel(db.Model):
@@ -1262,10 +1265,10 @@ class User(db.Model, UserMixin):
             return "Nafnlaus notandi"
 
     def is_admin(self):
-        return self.has_role(ADMIN_ROLE_NAME)
+        return self.has_role(ADMIN_ROLE)
 
     def is_verifier(self):
-        return any(r.name == "Greinir" for r in self.roles)
+        return any(r.name == VERIFIER_ROLE for r in self.roles)
 
     def __str__(self):
         if type(self.name) != str:

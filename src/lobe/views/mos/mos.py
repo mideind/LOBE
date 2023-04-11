@@ -34,6 +34,8 @@ from lobe.forms import (
     MosUploadForm,
 )
 from lobe.models import (
+    ADMIN_ROLE,
+    USER_ROLE,
     Collection,
     CustomRecording,
     CustomToken,
@@ -49,7 +51,7 @@ mos = Blueprint("mos", __name__, template_folder="templates")
 
 @mos.route("/mos/")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_list():
     page = int(request.args.get("page", 1))
     mos_list = Mos.query.order_by(
@@ -71,7 +73,7 @@ def mos_list():
 
 @mos.route("/mos/collection/<int:id>")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_collection(id):
     page = int(request.args.get("page", 1))
     collection = Collection.query.get(id)
@@ -96,7 +98,7 @@ def mos_collection(id):
 
 @mos.route("/mos/collection/none")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_collection_none():
     page = int(request.args.get("page", 1))
     collection = json.dumps({"name": "Óháð söfnun", "id": 0})
@@ -121,7 +123,7 @@ def mos_collection_none():
 
 @mos.route("/mos/<int:id>", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_detail(id):
     mos = Mos.query.get(id)
     form = MosUploadForm()
@@ -205,7 +207,7 @@ def mos_detail(id):
 
 @mos.route("/mos/<int:id>/edit/detail", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_edit_detail(id):
     mos = Mos.query.get(id)
     form = MosDetailForm(request.form, obj=mos)
@@ -307,7 +309,7 @@ def mos_test(id, uuid):
 
 @mos.route("/mos/<int:id>/mos_results", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_results(id):
     mos = Mos.query.get(id)
     mos_list = (
@@ -428,7 +430,7 @@ def mos_results(id):
 
 @mos.route("/mos/<int:id>/mos_results/download", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def download_mos_data(id):
     mos = Mos.query.get(id)
     response_lines = ["\t".join(map(str, line)) for line in mos.getResultData()]
@@ -439,7 +441,7 @@ def download_mos_data(id):
 
 @mos.route("/mos/<int:id>/stream_zip")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def stream_MOS_zip(id):
     mos = Mos.query.get(id)
     mos_list = (
@@ -470,7 +472,7 @@ def stream_MOS_zip(id):
 
 @mos.route("/mos/stream_mos_demo")
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def stream_MOS_index_demo():
     other_dir = app.config["OTHER_DIR"]
     try:
@@ -501,7 +503,7 @@ def post_mos_rating(id):
 
 @mos.route("/mos/instances/<int:id>/edit", methods=["POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_instance_edit(id):
     try:
         instance = MosInstance.query.get(id)
@@ -518,7 +520,7 @@ def mos_instance_edit(id):
 
 @mos.route("/mos/<int:id>/select_all", methods=["POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_select_all(id):
     try:
         form = MosSelectAllForm(request.form)
@@ -537,7 +539,7 @@ def mos_select_all(id):
 
 @mos.route("/mos/instances/<int:id>/delete/", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_mos_instance(id):
     instance = MosInstance.query.get(id)
     mos_id = instance.mos_id
@@ -552,7 +554,7 @@ def delete_mos_instance(id):
 
 @mos.route("/mos/create", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_create():
     try:
         mos = Mos()
@@ -569,7 +571,7 @@ def mos_create():
 
 @mos.route("/mos/collection/<int:id>/create", methods=["GET", "POST"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def mos_create_collection(id):
     max_num_recorded = Collection.query.get(id).num_recorded_tokens
     form = MosForm(max_num_recorded, request.form)
@@ -619,14 +621,14 @@ def download_custom_recording(id):
 
 @mos.route("/custom_tokens/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def custom_token(id):
     return render_template("custom_token.jinja", token=CustomToken.query.get(id), section="token")
 
 
 @mos.route("/custom_tokens/<int:id>/download/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def download_custom_token(id):
     token = CustomToken.query.get(id)
     try:

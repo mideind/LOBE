@@ -3,9 +3,9 @@ import os
 import traceback
 from functools import wraps
 
+from flask import Blueprint, Response
+from flask import current_app as app
 from flask import (
-    Blueprint,
-    Response,
     flash,
     jsonify,
     redirect,
@@ -14,14 +14,23 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask import current_app as app
 from flask_security import current_user, login_required, roles_accepted
+
 from lobe.database_functions import (
     delete_recording_db,
     resolve_order,
     save_recording_session,
 )
-from lobe.models import Collection, PrioritySession, Recording, Token, User, db
+from lobe.models import (
+    ADMIN_ROLE,
+    USER_ROLE,
+    Collection,
+    PrioritySession,
+    Recording,
+    Token,
+    User,
+    db,
+)
 from lobe.tools.analyze import (
     find_segment,
     load_sample,
@@ -40,7 +49,7 @@ recording = Blueprint(
 
 @recording.route("/recordings/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def recording_list():
     page = int(request.args.get("page", 1))
     only_bad = bool(request.args.get("only_bad", False))
@@ -70,7 +79,7 @@ def recording_list():
 
 @recording.route("/recordings/<int:id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def recording_detail(id):
     recording = Recording.query.get(id)
     prioritySessions = PrioritySession.query.all()
@@ -84,7 +93,7 @@ def recording_detail(id):
 
 @recording.route("/recordings/<int:id>/delete/", methods=["GET"])
 @login_required
-@roles_accepted("admin")
+@roles_accepted(ADMIN_ROLE)
 def delete_recording(id):
     recording = Recording.query.get(id)
     did_delete = delete_recording_db(recording)
@@ -97,7 +106,7 @@ def delete_recording(id):
 
 @recording.route("/recordings/<int:id>/mark_bad/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def toggle_recording_bad(id):
     recording = Recording.query.get(id)
     recording.marked_as_bad = not recording.marked_as_bad
@@ -107,7 +116,7 @@ def toggle_recording_bad(id):
 
 @recording.route("/recordings/<int:id>/mark_bad_ajax/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def toggle_recording_bad_ajax(id):
     recording = Recording.query.get(id)
     state = not recording.marked_as_bad
@@ -143,7 +152,7 @@ def require_login_if_closed_collection(func):
         if not collection.is_closed and collection.open_for_applicant(user_id):
             return func(*args, **kwargs)
 
-        if current_user and (current_user.has_role("admin") or current_user.has_role("Notandi")):
+        if current_user and (current_user.has_role(ADMIN_ROLE) or current_user.has_role(USER_ROLE)):
             return func(*args, **kwargs)
 
         return app.login_manager.unauthorized()
@@ -218,7 +227,7 @@ def record_session(collection_id):
 
 @recording.route("/record/analyze/", methods=["POST"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def analyze_audio():
     # save to disk, only one file in the form
     file_obj = next(iter(request.files.values()))
@@ -249,7 +258,7 @@ def analyze_audio():
 
 @recording.route("/recording/<int:id>/cut/", methods=["POST"])
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def cut_recording(id):
     recording = Recording.query.get(id)
     start = float(request.form["start"])
@@ -267,7 +276,7 @@ def cut_recording(id):
 
 @recording.route("/record/token/<int:tok_id>/")
 @login_required
-@roles_accepted("admin", "Notandi")
+@roles_accepted(ADMIN_ROLE, USER_ROLE)
 def record_single(tok_id):
     token = Token.query.get(tok_id)
     return render_template(
