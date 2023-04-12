@@ -179,10 +179,6 @@ class Collection(BaseModel, db.Model):
         else:
             return round((self.number_of_recordings) * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
-    @hybrid_property
-    def is_closed(self):
-        return self.posting is None
-
     def get_user_number_of_recordings(self, user_id):
         user_ids = self.user_ids
         if user_id in user_ids:
@@ -742,11 +738,7 @@ class Recording(BaseModel, db.Model):
         file_obj.save(self.path)
 
     def _save_wav_to_disk(self):
-        # there is no ffmpeg on Eyra
-        if os.getenv("SEMI_PROD", False) or os.getenv("FLASK_ENV", "development") == "production":
-            subprocess.call(["avconv", "-i", self.path, self.wav_path])
-        else:
-            subprocess.call(["ffmpeg", "-i", self.path, self.wav_path])
+        subprocess.call(["ffmpeg", "-i", self.path, self.wav_path])
 
     def add_file_obj(self, obj, recorder_settings):
         """
