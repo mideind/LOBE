@@ -562,7 +562,6 @@ def save_MOS_ratings(form, files):
 
 
 def save_recording_session(form, files):
-    duration = float(form["duration"])
     user_id = int(form["user_id"])
     manager_id = int(form["manager_id"])
     collection_id = int(form["collection_id"])
@@ -576,7 +575,6 @@ def save_recording_session(form, files):
             user_id,
             collection_id,
             manager_id,
-            duration=duration,
             has_video=has_video,
             is_dev=collection.is_dev,
         )

@@ -3,9 +3,9 @@ window.onbeforeunload = function () {
   return "Are you sure?";
 };
 
+// ----------------- Globals -------------------
 let mediaRecorder;
 let audioCtx;
-let ws;
 let micSurfer;
 let wavesurfer;
 let stream;
@@ -57,15 +57,7 @@ const cutButtonIcon = document.querySelector("#cutButtonIcon");
 const cutButtonText = document.querySelector("#cutButtonText");
 
 //other
-if (conf.has_video) {
-  const videoPlaceHolder = document.querySelector("#videoPlaceHolder");
-  const liveVideo = document.querySelector("#liveVideo");
-  let recordedVideo = document.querySelector("#recordedVideo");
-  recordedVideo.controls = false;
-}
 const downloadRecordFName = document.querySelector("code#downloadRecordFName");
-
-const startTime = new Date();
 
 //meter
 var meterCanvas = document.querySelector("#meter");
@@ -74,12 +66,17 @@ var rafID = null;
 
 // Audio configuration
 // We only support mono audio, not video
+// For more information about the constraints, see:
+// https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
 const mediaConstraints = {
   audio: {
-    sampleRate: 48000,
-    sampleSize: 16,
-    numChannels: 1,
+    sampleRate: 48000,  // Not supported in Firefox
+    sampleSize: 16,  // Not supported in Firefox
+    channelCount: 1,
     echoCancellation: true,
+    autoGainControl: true, // not supported on Safari, desktop and mobile
+    noiseSuppression: true, // not supported on Safari, desktop and mobile
+    latency: 0,
   },
 };
 // RecorderRTC configuration
@@ -87,10 +84,15 @@ const mediaRecorderConfig = {
   type: "audio",
   mimeType: "audio/wav",
   recorderType: StereoAudioRecorder,
-  sampleRate: 48000,
+  sampleRate: mediaConstraints.audio.sampleRate,
   bufferSize: 4096,
-  numberOfAudioChannels: 1,
+  numberOfAudioChannels: mediaConstraints.audio.channelCount,
+  disableLogs: true,
 };
+// For more information about the supported constraints, see:
+// https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSupportedConstraints
+const supportedConstraints = navigator.mediaDevices.getSupportedConstraints();
+console.log("Supported constraints: ", supportedConstraints);
 
 // ------------- register listeners ------------
 nextButton.addEventListener("click", nextAction);
@@ -125,28 +127,28 @@ $(window).keyup(function (e) {
 });
 
 // ---------------- Actions --------------------
-function nextAction() {
+async function nextAction() {
   // Increment the sentence index and update the UI
-  if (!areRecording() && !arePlaying()) {
+  if (!await areRecording() && !arePlaying()) {
     if (tokenIndex < numTokens - 1) {
       if (wavesurfer) {
         wavesurfer.destroy();
       }
       tokenIndex += 1;
-      updateUI();
+      await updateUI();
     }
   }
 }
 
-function prevAction() {
+async function prevAction() {
   // Decrement the sentence index and update the UI
-  if (!areRecording() && !arePlaying()) {
+  if (! await areRecording() && !arePlaying()) {
     if (tokenIndex > 0) {
       if (wavesurfer) {
         wavesurfer.destroy();
       }
       tokenIndex -= 1;
-      updateUI();
+      await updateUI();
     }
   }
 }
@@ -154,17 +156,12 @@ function prevAction() {
 async function recordAction() {
   const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-  if (!areRecording()) {
-    // what is this?
+  if (! await areRecording()) {
     if ("recording" in tokens[tokenIndex]) {
-      await deleteAction();
+      deleteAction();
     }
-    tokenCard.style.borderWidth = "2px";
-    tokenCard.classList.add("border-warning");
-    await delay(recordingDelay);
     await startRecording();
-    await delay(recordingDelay);
-    tokenCard.classList.remove("border-warning");
+    tokenCard.style.borderWidth = "2px";
     tokenCard.classList.add("border-success");
     skipButton.disabled = true;
     nextButton.disabled = true;
@@ -172,12 +169,13 @@ async function recordAction() {
     recordButton.disabled = false;
     recordButtonText.innerHTML = "Stoppa";
   } else {
-    tokenCard.classList.remove("border-success");
-    tokenCard.classList.add("border-warning");
-    await delay(recordingDelay);
     await stopRecording();
+    tokenCard.classList.remove("border-success");
     tokenCard.style.borderWidth = "1px";
-    tokenCard.classList.remove("border-warning");
+    recordButtonText.innerHTML = "Byrja";
+    skipButton.disabled = false;
+    nextButton.disabled = false;
+    prevButton.disabled = false;
   }
 
   async function startRecording() {
@@ -185,21 +183,19 @@ async function recordAction() {
       wavesurfer.destroy();
     }
     try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
     } catch (e) {
+      console.log(e);
       if (e instanceof OverconstrainedError) {
         promptError(
           `Villa kom upp í Media Constraints. Of hátt gildi á ${e.constraint}`,
           e.message,
           e.stack
         );
-      } else {
-        console.log(e);
       }
     }
-    recordedBlobs = [];
     audioCtx = new AudioContext(stream);
-    mediaRecorder = new RecordRTC(stream, mediaRecorderConfig);
+    mediaRecorder = new RecordRTCPromisesHandler(stream, mediaRecorderConfig);
     // Start recording
     mediaRecorder.startRecording();
     if (conf.visualize_mic) {
@@ -212,9 +208,30 @@ async function recordAction() {
   }
 
   async function stopRecording() {
-    mediaRecorder.stopRecording(function () {
-      recordedBlobs = mediaRecorder.getBlob();
-    });
+    // read information about the audio track - we send this to the server
+    let audioTrack = stream.getAudioTracks()[0];
+    // See: https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSettings
+    let audioSettings = audioTrack.getSettings();
+
+    await mediaRecorder.stopRecording();
+    let blob = await mediaRecorder.getBlob();
+    tokens[tokenIndex].recording = {
+      blob: blob,
+      fname: `${new Date().toISOString()}.wav`,
+      url: URL.createObjectURL(blob),
+      settings: {
+        sampleRate: audioSettings.sampleRate || mediaConstraints.audio.sampleRate, // not in audioSettings in Firefox
+        sampleSize: audioSettings.sampleSize || mediaConstraints.audio.sampleSize, // not in audioSettings in Firefox
+        channelCount: mediaConstraints.audio.channelCount, // never in audioSettings
+        latency: audioSettings.latency || mediaConstraints.audio.latency, // only is Safari
+        autoGainControl: audioSettings.autoGainControl || false,
+        echoCancellation: audioSettings.echoCancellation,
+        noiseSuppression: audioSettings.noiseSuppression || false,
+      },
+    };
+    console.log("Recording stored (not sent):");
+    console.log(tokens[tokenIndex].recording);
+    
     if (conf.visualize_mic) {
       meter.shutdown();
       if (!!micSurfer) {
@@ -222,41 +239,19 @@ async function recordAction() {
       }
       setMicUI();
     }
-    audioCtx.close();
 
+    // cleanup
+    audioCtx.close();
     //stop mediadevice access
     stream.getTracks().forEach((track) => track.stop());
+    // reset mediaRecorder
+    await mediaRecorder.reset();
+    await mediaRecorder.destroy();
+    mediaRecorder = null;
 
-    await addRecording();
-    if (conf.analyze_sound || conf.auto_trim) {
-      await analyze();
-    }
-    setAnalysisUI();
-
-    if (conf.live_transcribe) {
-      await ws.close();
-    }
-    setTranscriptionUI();
-    if (conf.has_video) {
-      await setVideoUI();
-    }
 
     await setRecordingUI();
-    if (conf.auto_trim) {
-      setCutUI();
-    }
-
     setFinishButtonUI();
-
-    function addRecording() {
-      let blob = new Blob(recordedBlobs, { type: conf.mime_type });
-      tokens[tokenIndex].recording = {
-        blob: blob,
-        fname: `${new Date().toISOString()}.wav`,
-        url: window.URL.createObjectURL(blob),
-        settings: recorderSettings,
-      };
-    }
   }
 }
 
@@ -287,7 +282,7 @@ function playAction() {
   if (arePlaying()) {
     wavesurfer.pause();
   } else {
-    if (Object.keys(wavesurfer.regions.list).length > 0) {
+    if (Object.keys(wavesurfer.regions) && Object.keys(wavesurfer.regions.list).length > 0) {
       wavesurfer.regions.list[Object.keys(wavesurfer.regions.list)[0]].play();
     } else {
       wavesurfer.play();
@@ -336,10 +331,6 @@ function finishAction() {
   var fd = new FormData();
   var recordings = {};
   var skipped = [];
-  fd.append(
-    "duration",
-    JSON.stringify((new Date().getTime() - startTime.getTime()) / 1000)
-  );
   fd.append("user_id", user_id);
   fd.append("manager_id", manager_id);
   fd.append("collection_id", collection_id);
@@ -393,35 +384,12 @@ async function updateUI() {
   setSkipButtonUI();
   setNextButtonUI();
   setFinishButtonUI();
-  setTranscriptionUI();
   setAnalysisUI();
-  if (conf.has_video) {
-    await setVideoUI();
-  }
   await setRecordingUI();
-  setMicUI();
+  await setMicUI();
   setCutUI();
 }
 
-async function setVideoUI() {
-  if (areRecording()) {
-    videoPlaceHolder.style.display = "none";
-    liveVideo.style.display = "block";
-    recordedVideo.style.display = "none";
-    videoCard.style.display = "block";
-  } else if ("recording" in tokens[tokenIndex]) {
-    videoPlaceHolder.style.display = "none";
-    liveVideo.style.display = "none";
-    recordedVideo.src = window.URL.createObjectURL(
-      tokens[tokenIndex].recording.blob
-    );
-    recordedVideo.style.display = "block";
-    videoCard.style.display = "block";
-  } else {
-    videoPlaceHolder.style.display = "inline-block";
-    videoCard.style.display = "none";
-  }
-}
 function setProgressUI(i) {
   var ratio = (i / numTokens) * 100;
   tokenProgress.style.width = `${ratio.toString()}%`;
@@ -508,11 +476,7 @@ async function setRecordingUI() {
       skipButton,
       deleteButton
     );
-    if (conf.has_video) {
-      await wavesurfer.load(recordedVideo);
-    } else {
-      await wavesurfer.loadBlob(tokens[tokenIndex].recording.blob);
-    }
+    await wavesurfer.loadBlob(tokens[tokenIndex].recording.blob);
     if ("cut" in tokens[tokenIndex]) {
       wavesurfer.addRegion({
         ...tokens[tokenIndex].cut,
@@ -526,29 +490,6 @@ async function setRecordingUI() {
   }
 }
 
-function setTranscriptionUI() {
-  if ("recording" in tokens[tokenIndex]) {
-    if (
-      "transcription" in tokens[tokenIndex].recording &&
-      tokens[tokenIndex].recording.transcription.length > 0
-    ) {
-      finalTranscriptionElem.innerHTML =
-        tokens[tokenIndex].recording.transcription;
-    } else {
-      if (conf.live_transcribe) {
-        finalTranscriptionElem.innerHTML = "Ekkert til afritunar";
-      } else {
-        finalTranscriptionElem.innerHTML = "Slökkt er á afritun";
-      }
-    }
-    transcriptionListItem.style.display = "block";
-  } else if (areRecording()) {
-    transcriptionListItem.style.display = "block";
-  } else {
-    finalTranscriptionElem.innerHTML = "";
-    transcriptionListItem.style.display = "none";
-  }
-}
 
 function setAnalysisUI() {
   if ("recording" in tokens[tokenIndex] && !conf.analyze_sound) {
@@ -601,8 +542,8 @@ function setAnalysisUI() {
   }
 }
 
-function setMicUI() {
-  if (areRecording() && conf.visualize_mic) {
+async function setMicUI() {
+  if (await areRecording() && conf.visualize_mic) {
     micCard.style.display = "block";
   } else {
     micCard.style.display = "none";
@@ -627,9 +568,9 @@ function setLiveUI(type) {
 }
 
 // ----------------- Other -----------------
-function areRecording() {
+async function areRecording() {
   if (mediaRecorder) {
-    return mediaRecorder.state === "recording";
+    return await mediaRecorder.getState() === "recording";
   }
   return false;
 }
@@ -644,14 +585,9 @@ function arePlaying() {
 function areRegions() {
   return (
     typeof wavesurfer === "object" &&
+    Object.keys(wavesurfer.regions) &&
     Object.keys(wavesurfer.regions.list).length > 0
   );
-}
-
-async function analyze() {
-  var body = await JSON.parse(analyzeAudio(recordedBlobs, analyze_url, conf));
-  tokens[tokenIndex].cut = body.segment;
-  tokens[tokenIndex].analysis = body.analysis;
 }
 
 // --------------------- Initialize UI --------------------------
