@@ -4,6 +4,7 @@ import os
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask
+from flask_babel import Babel
 from flask_executor import Executor
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
@@ -12,6 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 migrate = Migrate()
 security = Security()
 db = SQLAlchemy()
+babel = Babel()
 
 
 def add_app_config(app):
@@ -58,6 +60,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     security.init_app(app, user_datastore, login_form=ExtendedLoginForm)
+    babel.init_app(app)
 
     # register filters
     app.jinja_env.filters["datetime"] = format_date

@@ -334,7 +334,7 @@ class MosDetailForm(Form):
 
     class Meta:
         model = Mos
-        exclude = ["id", "created_at", "uuid", "collection", "applications"]
+        exclude = ["id", "created_at", "uuid", "collection"]
 
 
 class MosForm(ModelForm):

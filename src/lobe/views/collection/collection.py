@@ -151,12 +151,15 @@ def collection_detail(id):
         except StopIteration:
             # This probably only happens if no recordings for user
             num = collection.get_user_number_of_recordings(u.id)
-
+        try:
+            percent = round((num / collection.num_tokens) * 100)
+        except ZeroDivisionError:
+            percent = 0
         json_user = {
             "user": u,
             "number_of_recordings": num,
             "time_estimate": collection.get_user_time_estimate(u.id, num_recordings=num),
-            "percentage": round((num / collection.num_tokens) * 100),
+            "percentage": percent,
         }
 
         recorded_users.append(json_user)

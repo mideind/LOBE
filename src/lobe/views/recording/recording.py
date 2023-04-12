@@ -146,11 +146,9 @@ def require_login_if_closed_collection(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         collection_id = kwargs.get("collection_id") or request.form.get("collection_id")
-        user_id = request.args.get("user_id") or request.form.get("user_id")
+        request.args.get("user_id") or request.form.get("user_id")
 
-        collection = Collection.query.get(collection_id)
-        if not collection.is_closed and collection.open_for_applicant(user_id):
-            return func(*args, **kwargs)
+        Collection.query.get(collection_id)
 
         if current_user and (current_user.has_role(ADMIN_ROLE) or current_user.has_role(USER_ROLE)):
             return func(*args, **kwargs)
@@ -220,7 +218,6 @@ def record_session(collection_id):
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user,
         manager=current_user,
-        application=(not collection.is_closed),
         tal_api_token=app.config["TAL_API_TOKEN"],
     )
 
@@ -292,7 +289,7 @@ def record_single(tok_id):
 @recording.route("/post_recording/", methods=["POST"])
 @require_login_if_closed_collection
 def post_recording():
-    collection = Collection.query.get(request.form.get("collection_id"))
+    Collection.query.get(request.form.get("collection_id"))
     try:
         session_id = save_recording_session(request.form, request.files)
     except Exception as error:
@@ -300,9 +297,7 @@ def post_recording():
         app.logger.error("Error posting recordings: {}\n{}".format(error, traceback.format_exc()))
         return Response(str(error), status=500)
 
-    if collection.posting:
-        return Response(url_for("application.application_success"))
-    elif session_id is None:
+    if session_id is None:
         flash("Engar upptökur, bara setningar merktar.", category="success")
         return Response(url_for("main.index"), status=200)
     else:
