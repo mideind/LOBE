@@ -1,121 +1,105 @@
 {% extends "__base.jinja" %}
 {% block headscripts %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
-    <script src="https://unpkg.com/wavesurfer.js@3.3.3/dist/plugin/wavesurfer.microphone.min.js"></script>
-    <script src="https://unpkg.com/wavesurfer.js@3.3.3/dist/plugin/wavesurfer.regions.min.js"></script>
-    <script type='text/javascript'>
-        var tokens = {{json_tokens}};
-        var postRecordingRoute = "{{url_for('recording.post_recording')}}";
-        var user_id = {{user.id}};
-        var manager_id = {{manager.id|default(user.id)}};
-        var collection_id = {{collection.id}};
-        var conf = {{collection.configuration.json}};
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@3.3.3/dist/plugin/wavesurfer.microphone.min.js"></script>
+<script src="https://unpkg.com/wavesurfer.js@3.3.3/dist/plugin/wavesurfer.regions.min.js"></script>
+<script type='text/javascript'>
+    var tokens = {{ json_tokens }};
+    var postRecordingRoute = "{{url_for('recording.post_recording')}}";
+    var user_id = {{ user.id }};
+    var manager_id = {{ manager.id|default (user.id)}};
+    var collection_id = {{ collection.id }};
+    var conf = {{ collection.configuration.json }};
+</script>
 {% endblock %}
 {% block body %}
-    <div class='row mb-3 mt-md-0 mt-n4'>
-        {% if not single %}
-            <div class='col-12'>
-                <div class="progress">
-                    <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
-                </div>
-            </div>
-        {% endif %}
-    </div>
-    <div class='row'>
-        <div class='col-12 controls mb-3 d-flex justify-content-{% if single %}around{% else%}between{% endif %}'>
-            {% if not single %}
-                <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
-                    <i class='fa fa-arrow-left mr-1 ml-1'></i>
-                    <span class='font-weight-bold mr-1'>Fyrri</span>
-                </button>
-            {% endif %}
-            <div class='btn-group'>
-                <button id='record' class='btn btn-sm btn-secondary text-success rounded-pill-left' type='button'>
-                    <i class='fa fa-microphone mr-2 ml-2'></i>
-                    <span id='recordButtonText' class='font-weight-bold'>Byrja</span>
-                </button>
-                <button id='skipButton'
-                        class='btn btn-sm btn-secondary text-danger rounded-pill-right'
-                        type='button'>
-                    <span class='font-weight-bold'>Sleppa</span>
-                    <i class='fa fa-times mr-2 ml-2'></i>
-                </button>
-            </div>
-            {% if not single %}
-                <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
-                    <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
-                    <i class='fa fa-arrow-right mr-1'></i>
-                </button>
-            {% endif %}
+<div class='row mb-3 mt-md-0 mt-n4'>
+    {% if not single %}
+    <div class='col-12'>
+        <div class="progress">
+            <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
         </div>
     </div>
-
-    {% if collection.configuration.has_video %}
-        <div class='row'>
-            <div class='col-lg-6 col-md-8 col-12 d-flex align-items-stretch'>
-                {% include 'token_card.jinja' %}
-            </div>
-            <div class='col-lg-6 col-md-4 col-12 mt-md-0 mt-2 d-flex align-items-stretch'>
-                {% include 'video_card.jinja' %}
-            </div>
-        </div>
-        <div class='row mt-2'>
-            <div class='col-12'>
-                {% include 'mic_card.jinja' %}
-                {% include 'recording_card.jinja' %}
-            </div>
-        </div>
-    {% else %}
-        <div class='row'>
-            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-                {% include 'token_card.jinja' %}
-            </div>
-            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 pb-2'>
-                {% include 'mic_card.jinja' %}
-                {% include 'recording_card.jinja' %}
-            </div>
-        </div>
     {% endif %}
-    <div class='row mt-2'>
-        <div class='col-12'>
-            <button type='submit' id='send' type='button' class='btn btn-success rounded-pill float-right'>
-                Klára
-                <i id='finishButtonIcon' class='ml-2 fa fa-arrow-right'></i>
+</div>
+<div class='row'>
+    <div class='col-12 controls mb-3 d-flex justify-content-{% if single %}around{% else%}between{% endif %}'>
+        {% if not single %}
+        <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+            <i class='fa fa-arrow-left mr-1 ml-1'></i>
+            <span class='font-weight-bold mr-1'>Fyrri</span>
+        </button>
+        {% endif %}
+        <div class='btn-group'>
+            <button id='record' class='btn btn-sm btn-secondary text-success rounded-pill-left' type='button'>
+                <i class='fa fa-microphone mr-2 ml-2'></i>
+                <span id='recordButtonText' class='font-weight-bold'>Byrja</span>
+            </button>
+            <button id='skip' class='btn btn-sm btn-secondary text-danger rounded-pill-right' type='button'>
+                <span class='font-weight-bold'>Sleppa</span>
+                <i class='fa fa-times mr-2 ml-2'></i>
             </button>
         </div>
+        {% if not single %}
+        <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+            <span class='font-weight-bold ml-1 mr-1'>Næsta</span>
+            <i class='fa fa-arrow-right mr-1'></i>
+        </button>
+        {% endif %}
     </div>
-        <div class='row mt-2'>
-            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
-                <h4>Leiðbeiningar</h4>
-                <p>
-                    Setningin sem á að lesa birtist í gráa boxinu fyrir ofan.
-                </p>
-                <p>
-                    Til að taka upp setningu er smellt á <i class='text-success'>byrja</i> takkann fyrir ofan setninguna sem skal lesin.
-                    Svo skal lesa setninguna og hætta upptöku með því að smella á sama takka.
-                </p>
-                <p>
-                    Þegar búið er að taka upp setningu er hægt að hlusta á hana með því að
-                    smella á <i class='text-success'>spila</i> takkann sem byrtist.
-                </p>
-                <p>
-                    Til að halda áfram í næstu setningu er smellt á <i class='text-success'>næsti</i>.
-                    Þegar búið er að lesa inn allar setningarnar er umsókn kláruð með því
-                    að smella á <i class='text-success'>Klára</i>
-                </p>
-                <p>
-                    Aukalega er hægt að klippa upptöku til ef óæskileg hljóð/þögn voru í byrjun eða enda.
-                </p>
-            </div>
-        </div>
+</div>
+
+
+<div class='row'>
+    <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+        {% include 'token_card.jinja' %}
+    </div>
+    <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 pb-2'>
+        {% include 'mic_card.jinja' %}
+        {% include 'recording_card.jinja' %}
+    </div>
+</div>
+<div class='row mt-2'>
+
+    <div class='col-12'>
+        <button type='submit' id='send' type='button' class='btn btn-success rounded-pill float-right'>
+            Klára
+            <i id='finishButtonIcon' class='ml-2 fa fa-arrow-right'></i>
+        </button>
+    </div>
+</div>
+<div class='row mt-2'>
+    <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
+        <h4>Leiðbeiningar</h4>
+        <p>
+            Setningin sem á að lesa birtist í gráa boxinu fyrir ofan.
+        </p>
+        <p>
+            Til að taka upp setningu er smellt á <i class='text-success'>byrja</i> takkann fyrir ofan setninguna sem
+            skal lesin.
+            Svo skal lesa setninguna og hætta upptöku með því að smella á sama takka.
+        </p>
+        <p>
+            Þegar búið er að taka upp setningu er hægt að hlusta á hana með því að
+            smella á <i class='text-success'>spila</i> takkann sem byrtist.
+        </p>
+        <p>
+            Til að halda áfram í næstu setningu er smellt á <i class='text-success'>næsti</i>.
+            Þegar búið er að lesa inn allar setningarnar er umsókn kláruð með því
+            að smella á <i class='text-success'>Klára</i>
+        </p>
+        <p>
+            Aukalega er hægt að klippa upptöku til ef óæskileg hljóð/þögn voru í byrjun eða enda.
+        </p>
+    </div>
+</div>
 {% endblock %}
 {% block scripts %}
-    {{super()}}
-    <script src='{{url_for("main.static", filename="js/error.js")}}'></script>
-    <script src='{{url_for("recording.static", filename="js/surf.js")}}'></script>
-    <script src='{{url_for("recording.static", filename="js/volume-meter.js")}}'></script>
-    <script src='{{url_for("recording.static", filename="js/meter.js")}}'></script>
-    <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
-    <script src='{{url_for("recording.static", filename="js/record.js")}}'></script>
+{{super()}}
+<script src='{{url_for("main.static", filename="js/error.js")}}'></script>
+<script src='{{url_for("recording.static", filename="js/surf.js")}}'></script>
+<script src='{{url_for("recording.static", filename="js/volume-meter.js")}}'></script>
+<script src='{{url_for("recording.static", filename="js/meter.js")}}'></script>
+<script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
+<script src='{{url_for("recording.static", filename="js/record.js")}}'></script>
 {% endblock %}

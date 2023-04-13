@@ -222,6 +222,7 @@ def record_session(collection_id):
     )
 
 
+# This is no longer used but we keep it around for now
 @recording.route("/record/analyze/", methods=["POST"])
 @login_required
 @roles_accepted(ADMIN_ROLE, USER_ROLE)
@@ -289,7 +290,6 @@ def record_single(tok_id):
 @recording.route("/post_recording/", methods=["POST"])
 @require_login_if_closed_collection
 def post_recording():
-    Collection.query.get(request.form.get("collection_id"))
     try:
         session_id = save_recording_session(request.form, request.files)
     except Exception as error:
@@ -298,7 +298,6 @@ def post_recording():
         return Response(str(error), status=500)
 
     if session_id is None:
-        flash("Engar upptökur, bara setningar merktar.", category="success")
+        flash("Ekkert til að vista", category="success")
         return Response(url_for("main.index"), status=200)
-    else:
-        return Response(url_for("session.rec_session_detail", id=session_id), status=200)
+    return Response(url_for("session.rec_session_detail", id=session_id), status=200)
