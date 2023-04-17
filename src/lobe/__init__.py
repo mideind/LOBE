@@ -36,7 +36,7 @@ def add_app_config(app):
 
 def create_app():
     from lobe.filters import format_date
-    from lobe.forms import ExtendedLoginForm
+    from lobe.forms import ExtendedRegisterForm
     from lobe.models import Role, User
     from lobe.views.collection import collection
     from lobe.views.configuration import configuration
@@ -59,7 +59,10 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-    security.init_app(app, user_datastore, login_form=ExtendedLoginForm)
+    # We attach our extended login and register form to the security extension
+    # See: https://flask-security-too.readthedocs.io/en/stable/customizing.html#forms
+    # It uses wtforms.
+    security.init_app(app, user_datastore, register_form=ExtendedRegisterForm)
     babel.init_app(app)
 
     # register filters
