@@ -218,7 +218,6 @@ def record_session(collection_id):
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user,
         manager=current_user,
-        tal_api_token=app.config["TAL_API_TOKEN"],
     )
 
 
@@ -283,7 +282,6 @@ def record_single(tok_id):
         section="record",
         single=True,
         json_tokens=json.dumps([token.get_dict()]),
-        tal_api_token=app.config["TAL_API_TOKEN"],
     )
 
 
