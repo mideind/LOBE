@@ -16,6 +16,7 @@ from flask import (
 )
 from flask_security import login_required, roles_accepted
 
+from lobe import executor
 from lobe.database_functions import (
     create_tokens,
     insert_collection,
@@ -210,7 +211,7 @@ def trim_collection(id):
     Trim all recordings in the collection
     """
     trim_type = int(request.args.get("trim_type", default=0))
-    app.executor.submit(trim_collection_handler, id, trim_type)
+    executor.submit(trim_collection_handler, id, trim_type)
     flash("Söfnun verður klippt vonbráðar.", category="success")
     return redirect(url_for("collection.collection_detail", id=id))
 
@@ -220,7 +221,7 @@ def trim_collection(id):
 @roles_accepted(ADMIN_ROLE)
 def generate_zip(id):
     # TODO: Send some message in real-time to notify user when finished
-    app.executor.submit(create_collection_zip, id)
+    executor.submit(create_collection_zip, id)
     flash("Skjalasafn verður tilbúið vonbráðar.", category="success")
     return redirect(url_for("collection.collection_detail", id=id))
 
