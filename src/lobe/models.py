@@ -5,6 +5,7 @@ import subprocess
 import wave
 from collections import defaultdict
 from datetime import datetime, timedelta
+import logging
 
 import numpy as np
 from flask import current_app as app
@@ -14,10 +15,12 @@ from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from sqlalchemy.orm import relationship
 from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
 
 from lobe import db
 from lobe.tools.latin_square import balanced_latin_squares
 
+log = logging.getLogger(__name__)
 ADMIN_ROLE_ID = 1
 ESTIMATED_AVERAGE_RECORD_LENGTH = 5
 
@@ -336,7 +339,7 @@ class Configuration(BaseModel, db.Model):
 
     @hybrid_property
     def mime_type(self):
-        return f'{"video" if self.has_video else "audio"}/webm; codecs=' + f'"{"vp8, " if self.has_video else ""}pcm"'
+        return f'{"video" if self.has_video else "audio"}/wav; codecs=' + f'"{"vp8, " if self.has_video else ""}pcm"'
 
     @hybrid_property
     def json(self):
@@ -729,18 +732,21 @@ class Recording(BaseModel, db.Model):
             return self.wav_path
         return self.path
 
-    def save_to_disk(self, file_obj):
+    def save_to_disk(self, file_obj: FileStorage):
         """
         Can only be called after being committed
         since we need self.id
         """
         file_obj.filename = self.fname
+        log.info(f"Saving file to {self.path}")
+        log.info(f"File name: {file_obj.filename}")
+        log.info(f"File content-type: {file_obj.content_type}")
         file_obj.save(self.path)
 
     def _save_wav_to_disk(self):
         subprocess.call(["ffmpeg", "-i", self.path, self.wav_path])
 
-    def add_file_obj(self, obj, recorder_settings):
+    def add_file_obj(self, obj: FileStorage, recorder_settings):
         """
         performs, in order, :
         * self.set_path()
@@ -754,7 +760,7 @@ class Recording(BaseModel, db.Model):
 
     def _set_path(self):
         self.file_id = "{}_r{:09d}_t{:09d}".format(os.path.splitext(self.original_fname)[0], self.id, self.token_id)
-        self.fname = secure_filename(f"{self.file_id}.webm")
+        self.fname = secure_filename(f"{self.file_id}.wav")
         self.path = os.path.join(
             app.config["VIDEO_DIR"] if self.has_video else app.config["RECORD_DIR"],
             str(self.token.collection_id),
@@ -906,7 +912,7 @@ class CustomRecording(BaseModel, db.Model):
     def _set_path(self):
         # TODO: deal with file endings
         self.file_id = "{}_s{:09d}_m{:09d}".format(os.path.splitext(self.original_fname)[0], self.id, self.token_id)
-        self.fname = secure_filename(f"{self.file_id}.webm")
+        self.fname = secure_filename(f"{self.file_id}.wav")
         self.path = os.path.join(app.config["CUSTOM_RECORDING_DIR"], str(self.mosInstance.id), self.fname)
         self.wav_path = os.path.join(
             app.config["WAV_CUSTOM_AUDIO_DIR"],
